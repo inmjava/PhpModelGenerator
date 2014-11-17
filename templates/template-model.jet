@@ -1,0 +1,654 @@
+<%@ jet package="br.gov.pr.apucarana.generator.modelgenerator.templates" 
+		class="ModelTemplate" 
+		skeleton="generator.skeleton"
+		imports="br.gov.pr.apucarana.generator.modelgenerator.bean.Coluna br.gov.pr.apucarana.generator.modelgenerator.bean.Tabela" %>
+<?php
+
+/**
+  * <%= p.getNameCamel() %> model
+  *
+  * Utiliza o padrão Data Mapper para persistir dados.
+  * 
+  * @uses       <%= p.getNameMapper() %>
+  * @subpackage Model
+  */
+class <%= p.getNameModel() %> <%= p.hasTabelaExtends() ? "extends "+p.getTabelaExtends().getNameModel() : "" %> {
+	<%if(!p.hasTabelaExtends()){for (Coluna c: p.getChavesPrimarias()) { %>
+	/**
+	 * @var <%= c.getTipo() %>
+	 * Primay Key
+	 */
+	protected $_<%= c.getNameCamel() %>;
+	<%}} %>
+	/**
+	 * @var <%= p.getNameMapper() %>
+	 */
+	protected $_mapper;
+	<%for (Coluna c: p.getColunas()) { %>
+	/**
+	 * @var <%= c.getTipo() %>
+	 */
+	protected $_<%= c.getNameCamel() %>;
+	<%} %>
+	<%for (Coluna c: p.getColunasFk()) { %>
+	/**
+	 * @var <%= c.getTabelaFk().getNameModel() %><% if(c.isColunaFkPk(p.getColunasFkPk())) { %>
+	 * Primay Key<% } %>
+	 */
+	protected $_<%= c.getVarNameCamel() %>;
+	<%} %>
+	/**
+	 * Constructor
+	 * 
+	 * @param  array|null $options 
+	 * @return void
+	 */
+	public function __construct(array $options = null) {
+		if (is_array($options)) {
+			$this->setOptions($options);
+		}
+	}
+	
+	/**
+	 * Overloading: allow property access
+	 * 
+	 * @param  string $name 
+	 * @param  mixed $value 
+	 * @return void
+	 */
+	public function __set($name, $value) {
+		$method = "set" . $name;
+		if ("mapper" == $name || !method_exists($this, $method)) {
+			throw new Exception("Invalid property specified");
+		}
+		$this->$method($value);
+	}
+
+	/**
+	 * Overloading: allow property access
+	 * 
+	 * @param  string $name 
+	 * @return mixed
+	 */
+	public function __get($name) {
+		$method = "get" . $name;
+		if ("mapper" == $name || !method_exists($this, $method)) {
+			throw new Exception("Invalid property specified");
+		}
+		return $this->$method();
+	}
+	
+	/**
+	 * Set object state
+	 * 
+	 * @param  array $options 
+	 * @return <%= p.getNameModel() %>
+	 */
+	public function setOptions(array $options) {
+		$methods = get_class_methods($this);
+		foreach ($options as $key => $value) {
+			$method = "set" . ucfirst($key);
+			if (in_array($method, $methods)) {
+			    $this->$method($value);
+			}
+		}
+		return $this;
+	}
+    
+    /**
+	 * Set primary (Não possui variável como atributo)
+	 * Código identificador da entidade <%= p.getNameModel() %>
+	 * 
+	 * @param <%=p.getPkTypeOrArray(true)%> primary
+	 * @return <%= p.getNameModel() %>
+	 */
+	public function setPk(<%= (p.isArrayPk() ? "array " : "") %>$pk){
+		<% if(p.hasTabelaExtends()) { %>
+		return parent::setPk($pk);
+		<% } else if(p.isArrayPk()) { %>
+		$this->setOptions($pk);
+		<% } else { %>
+		return $this-><%= (p.getFirstPkColumn().isColunaFkPk(p.getColunasFkPk())) ? p.getFirstPkColumn().getTabelaFk().getSetName() : p.getFirstPkColumn().getSetName() %>($pk);
+		<% } %>
+	}
+	
+	/**
+	 * Get primary (Não possui variável como atributo)
+	 * Código identificador da entidade <%= p.getNameModel() %>
+	 * Primary Key
+	 * 
+	 * @return null|<%=p.getPkTypeOrArray(true)%>
+	 */
+	public function getPk(){
+		<% if(p.hasTabelaExtends()) { %>
+		return parent::getPk();
+		<% } else { %><% if(p.isArrayPk()) { %>
+		return array(
+			<%for (Coluna c: p.getChavesPrimarias()) { %>
+			"<%= c.getNameCamel() %>" => $this-><%= c.getGetName() %>(),
+			<% } %><%for (Coluna c: p.getColunasFkPk()) { %>
+			"<%= c.getTabelaFk().getVarNameCamel() %>" => $this-><%= c.getGetName() %>(), 
+			<%} %>
+		);
+		<% } else { %>
+		return $this-><%= (p.getFirstPkColumn().isColunaFkPk(p.getColunasFkPk())) ? p.getFirstPkColumn().getTabelaFk().getGetName() : p.getFirstPkColumn().getGetName() %>();
+		<% }} %>
+	}
+	<%if(!p.hasTabelaExtends()){for (Coluna c: p.getChavesPrimarias()) { %>
+	/**
+	 * Setter da propriedade <%=c.getNameCamel()%>
+	 * Primary Key
+	 * 
+	 * @param <%=c.getTipo()%> $<%=c.getNameCamel()%>
+	 * @return <%= p.getNameModel() %>
+	 */
+	public function <%=c.getSetName()%>($<%=c.getNameCamel()%>){
+		$this->_<%=c.getNameCamel()%> = <%= c.getAttCasted()%>;
+		return $this;
+	}
+	
+	/**
+	 * Getter da propriedade <%=c.getNameCamel()%>
+	 * Primary Key
+	 * 
+	 * @return null|<%=c.getTipo()%>
+	 */
+	public function <%=c.getGetName()%>() {
+		return $this->_<%=c.getNameCamel()%>;
+	}
+	<%}} %><%for (Coluna c: p.getColunas()) { %>
+	/**
+	 * Setter da propriedade <%=c.getNameCamel()%>
+	 * 
+	 * @param <%=c.getTipo()%> $<%=c.getNameCamel()%>
+	 * @return <%= p.getNameModel() %>
+	 */
+	public function <%=c.getSetName()%>($<%=c.getNameCamel()%>){
+		<%if(c.getTipo().equals("date")){%>
+		// Verifica o formato da data em questão 
+		// se for brasileiro (dd/mm/yyyy ou dd/mm/yyyy hh:ii ou dd/mm/yyyy hh:ii:ss)
+		// converte em datetime (yyyy-mm-dd hh:ii:ss) 
+		// caso contrário
+		// considera que foi passado um datetime e associa a variável
+		
+		list($d, $m, $a, $h, $i, $s) = split( '[/ :]', $<%=c.getNameCamel()%>);
+    	if(($d && $m && $a && (strlen($<%=c.getNameCamel()%>) == 10) || ($d && $m && $a && $h && $i && strlen($<%=c.getNameCamel()%>) == 16) || ($d && $m && $a && $h && $i && $s && strlen($<%=c.getNameCamel()%>) == 19))){
+    		if(!$h){$h = $i = $s = '00';}
+    		if(!$s){$s = '00';}
+			$<%=c.getNameCamel()%> = "$a-$m-$d $h:$i:$s";
+    	}<%}%>
+		$this->_<%=c.getNameCamel()%> = <%=c.getAttCasted()%>;
+		return $this;
+	}
+	
+	/**
+	 * Getter da propriedade <%=c.getNameCamel()%>
+	 * 
+	 * @return null|<%=c.getTipo()%>
+	 */
+	public function <%=c.getGetName()%>() {
+		return $this->_<%=c.getNameCamel()%>;
+	}
+	<%} %><%for (Coluna c: p.getColunasFk()) { %>
+	/**
+	 * Setter da propriedade <%=c.getVarNameCamel()%><% if(c.isColunaFkPk(p.getColunasFkPk())) { %>
+	 * Primay Key<% } %>
+	 * 
+	 * @param <%=c.getTabelaFk().getNameModel()%> $<%=c.getVarNameCamel()%>
+	 * @return <%= p.getNameModel() %>
+	 */
+	public function <%=c.getSetNameColunaFk()%>($<%=c.getVarNameCamel()%>){
+		if (!$<%=c.getVarNameCamel()%> instanceof <%=c.getTabelaFk().getNameModel()%>) {
+            $<%=c.getVarNameCamel()%> = new <%=c.getTabelaFk().getNameModel()%>(array("<%= c.getColunaFk().getNameCamel() %>" => $<%=c.getVarNameCamel()%>));
+            $<%=c.getVarNameCamel()%> = $<%=c.getVarNameCamel()%>->findFirstByExample();
+        }
+		
+		$this->_<%=c.getVarNameCamel()%> = <%=c.getAttCasted()%>;
+		return $this;
+	}
+	
+	/**
+	 * Getter da propriedade <%=c.getVarNameCamel()%><% if(c.isColunaFkPk(p.getColunasFkPk())) { %>
+	 * Primay Key<% } %>
+	 * 
+	 * @return null|<%=c.getTabelaFk().getNameModel()%>
+	 */
+	public function <%=c.getGetNameColunaFk()%>() {
+		return $this->_<%=c.getVarNameCamel()%>;
+	}
+	<%} %>
+	/**
+	 * Set data mapper
+	 * 
+	 * @param  mixed $mapper 
+	 * @return <%=p.getNameMapper()%>
+	 */
+	public function setMapper($mapper) {
+		$this->_mapper = $mapper;
+		return $this;
+	}
+	
+	/**
+	 * Get data mapper
+	 *
+	 * Instancia <%=p.getNameMapper()%> apenas se ainda n�o foi instanciada (Lazy Load).
+	 * 
+	 * @return <%=p.getNameMapper()%>
+	 */
+	public function getMapper() {
+		if (null === $this->_mapper || !$this->_mapper instanceof <%=p.getNameMapper()%>) {
+			$this->setMapper(new <%=p.getNameMapper()%>());
+		}
+		return $this->_mapper;
+	}
+	<%for (Tabela t: p.getTabelasFk()) { %>	
+	/**
+	 * Lista instâncias <%= t.getNameModel() %> associadas a 
+	 * <%= p.getNameModel() %>
+	 * 
+	 * @param $count Número máximo de registros
+	 * @param $offset Começa busca a partir do registro de número especificado 
+	 * @return array
+	 */
+	public function list<%= t.getNameCamel() %><%= t.getByColunaFK() %>($count=null, $offset=null, $order=null){
+		$<%= t.getVarNameCamel() %> = new <%= t.getNameModel() %>();
+		$<%= t.getVarNameCamel() %>-><%= p.getSetName() %>($this);
+		return $<%= t.getVarNameCamel() %>->fetchListByExample($<%= t.getVarNameCamel() %>, $order, $count, $offset);
+	}	
+	
+	/**
+	 * Obtem o primeiro registro <%= t.getNameModel() %> associado a 
+	 * <%= p.getNameModel() %>
+	 * 
+	 * @return <%= t.getNameModel() %>
+	 */
+	public function findFirst<%= t.getNameCamel() %><%= t.getByColunaFK() %>($offset=null, $order=null) {
+		$aux = $this->list<%= t.getNameCamel() %>(1, $offset, $order);
+		if($aux == null)
+			return null;
+		return $aux[0];
+	}	
+	
+	/**
+	 * Exclui instâncias <%= t.getNameModel() %> associadas a 
+	 * <%= p.getNameModel() %>
+	 * 
+	 * @param $entries um array de objetos <%= t.getNameModel() %> ou 
+	 * apenas um objeto <%= t.getNameModel() %>
+	 * @return <%= p.getNameModel() %>
+	 */
+	public function delete<%= t.getNameCamel() %><%= t.getByColunaFK() %>($entries){
+		if($entries instanceof <%= t.getNameModel() %>){
+			$entries = array($entries);
+		}
+		foreach($entries as $entry){
+			$entry-><%= p.getSetName() %>($this);
+			$entry->delete();
+		}
+		return $this;
+	}
+	
+	/**
+	 * Exclui instâncias <%= t.getNameModel() %> associadas a 
+	 * <%= p.getNameModel() %>
+	 * 
+	 * @return <%= p.getNameModel() %>
+	 */
+	public function deleteAll<%= t.getNameCamel() %><%= t.getByColunaFK() %>(){
+		$this->delete<%= t.getNameCamel() %>($this->list<%= t.getNameCamel() %>());
+		return $this;
+	}
+	
+	/**
+	 * Insere instâncias <%= t.getNameModel() %> associadas a 
+	 * <%= p.getNameModel() %>
+	 * 
+	 * @param $entries um array de objetos <%= t.getNameModel() %> ou 
+	 * apenas um objeto <%= t.getNameModel() %>
+	 * @return <%= p.getNameModel() %>
+	 */
+	public function insert<%= t.getNameCamel() %><%= t.getByColunaFK() %>($entries){
+		if($entries instanceof <%= t.getNameModel() %>){
+			$entries = array($entries);
+		}
+		foreach($entries as $entry){
+			$entry-><%= p.getSetName() %>($this);
+			$entry->insert();
+		}
+		return $this;
+	}
+	
+	/**
+	 * Atualiza instâncias <%= t.getNameModel() %> associadas a 
+	 * <%= p.getNameModel() %>
+	 * 
+	 * @param $entries um array de objetos <%= t.getNameModel() %> ou 
+	 * apenas um objeto <%= t.getNameModel() %>
+	 * @return <%= p.getNameModel() %>
+	 */
+	public function update<%= t.getNameCamel() %><%= t.getByColunaFK() %>($entries){
+		$this->deleteAll<%= t.getNameCamel() %>();
+		$this->insert<%= t.getNameCamel() %>($entries);
+		return $this;
+	}<% if(t.isTabelaNM()){ %>
+	
+	/**
+	 * Lista instâncias <%= t.getTabelaNM().getNameModel() %> associadas a 
+	 * <%= p.getNameModel() %>
+	 * 
+	 * @param $count Número máximo de registros
+	 * @param $offset Começa busca a partir do registro de número especificado 
+	 * @return array
+	 */
+	public function list<%= t.getTabelaNM().getNameCamel() %>($count=null, $offset=null, $order=null){
+		$entries = $this->list<%= t.getNameCamel() %>($count, $offset, $order);
+		$entriesOut = array();
+		foreach ($entries as $entry) {
+			$entriesOut[] = $entry-><%= t.getTabelaNM().getGetName() %>();
+		}
+		return $entriesOut; 
+	}	
+	
+	/**
+	 * Obtem o primeiro registro <%= t.getTabelaNM().getNameCamel() %> associado a 
+	 * <%= p.getNameModel() %>
+	 * 
+	 * @return <%= t.getNameModel() %>
+	 */
+	public function findFirst<%= t.getTabelaNM().getNameCamel() %>() {
+		$aux = $this->list<%= t.getTabelaNM().getNameCamel() %>(1);
+		if($aux == null)
+			return null;
+		return $aux[0];
+	}
+	
+	/**
+	 * Exclui instâncias <%= t.getTabelaNM().getNameModel() %> associadas a 
+	 * <%= p.getNameModel() %>
+	 * 
+	 * @param $entries um array de objetos <%= t.getTabelaNM().getNameModel() %> ou 
+	 * apenas um objeto <%= t.getTabelaNM().getNameModel() %>
+	 * @return <%= p.getNameModel() %>
+	 */
+	public function delete<%= t.getTabelaNM().getNameCamel() %>($entries){
+		if($entries instanceof <%= t.getTabelaNM().getNameModel() %>){
+			$entries = array($entries);
+		}
+		$entriesIn = array();
+		foreach($entries as $entry){
+			$entryIn = new <%= t.getNameModel() %>();
+			$entryIn-><%= t.getTabelaNM().getSetName() %>($entry)
+			        -><%= p.getSetName() %>($this);
+			$entriesIn[] = $entryIn;
+		}
+		return $this->delete<%= t.getNameCamel() %>($entriesIn);
+	}
+	
+	/**
+	 * Exclui instâncias <%= t.getTabelaNM().getNameModel() %> associadas a 
+	 * <%= p.getNameModel() %>
+	 * 
+	 * @return <%= p.getNameModel() %>
+	 */
+	public function deleteAll<%= t.getTabelaNM().getNameCamel() %>(){
+		return $this->deleteAll<%= t.getNameCamel() %>();
+	}
+	
+	/**
+	 * Insere instâncias <%= t.getTabelaNM().getNameModel() %> associadas a 
+	 * <%= p.getNameModel() %>
+	 * 
+	 * @param $entries um array de objetos <%= t.getTabelaNM().getNameModel() %> ou 
+	 * apenas um objeto <%= t.getTabelaNM().getNameModel() %>
+	 * @return <%= p.getNameModel() %>
+	 */
+	public function insert<%= t.getTabelaNM().getNameCamel() %>($entries){
+		if($entries instanceof <%= t.getTabelaNM().getNameModel() %>){
+			$entries = array($entries);
+		}
+		$entriesIn = array();
+		foreach($entries as $entry){
+			$entryIn = new <%= t.getNameModel() %>();
+			$entryIn-><%= t.getTabelaNM().getSetName() %>($entry)
+			        -><%= p.getSetName() %>($this);
+			$entriesIn[] = $entryIn;
+		}
+		return $this->insert<%= t.getNameCamel() %>($entriesIn);
+	}
+	
+	/**
+	 * Atualiza instâncias <%= t.getTabelaNM().getNameModel() %> associadas a 
+	 * <%= p.getNameModel() %>
+	 * 
+	 * @param $entries um array de objetos <%= t.getTabelaNM().getNameModel() %> ou 
+	 * apenas um objeto <%= t.getTabelaNM().getNameModel() %>
+	 * @return <%= p.getNameModel() %>
+	 */
+	public function update<%= t.getTabelaNM().getNameCamel() %>($entries){
+		if($entries instanceof <%= t.getTabelaNM().getNameModel() %>){
+			$entries = array($entries);
+		}
+		$entriesIn = array();
+		foreach($entries as $entry){
+			$entryIn = new <%= t.getNameModel() %>();
+			$entryIn-><%= t.getTabelaNM().getSetName() %>($entry)
+			        -><%= p.getSetName() %>($this);
+			$entriesIn[] = $entryIn;
+		}
+		return $this->update<%= t.getNameCamel() %>($entriesIn);
+	}	
+	<%}} %>	
+	/**
+	 * Insere o registro corrente
+	 * 
+	 * @return void
+	 */
+	public function insert() {<% if(p.hasTabelaExtends()) { %>
+		parent::getMapper()->insert($this);<% } %>
+		$this->getMapper()->insert($this);
+	}
+	
+	/**
+	 * Atualiza o registro corrente
+	 * 
+	 * @return void
+	 */
+	public function update() {<% if(p.hasTabelaExtends()) { %>
+		parent::getMapper()->update($this);<% } %>
+		$this->getMapper()->update($this);
+	}
+	
+	/**
+	 * Deleta o registro corrente
+	 * @return void
+	 */
+	public function delete() {
+		$this->getMapper()->delete($this);<% if(p.hasTabelaExtends()) { %>
+		parent::getMapper()->delete($this);<% } %>
+	}
+	
+	/**
+	 * Deleta um conjunto de registros de acordo 
+	 * com a cláusula where
+	 * 
+	 * @param $where 
+	 * @return void
+	 */
+	public function deleteWhere($where) {
+		$this->getMapper()->deleteWhere($where);
+	}
+
+	/**
+	 * Procura um registro
+	 *
+	 * Reinicia o estado da instância se encontrado pelo id
+	 * 
+	 * @param  <%= p.getPkTypeOrArray(true) %> $id 
+	 * @return <%= p.getNameModel() %>
+	 */
+	public function find(<%= (p.isArrayPk() ? "array" : "") %> $id) {<% if(p.hasTabelaExtends()){ %>
+		parent::getMapper()->find($id, $this);
+		<% } %>
+		$this->getMapper()->find($id, $this);
+		return $this;
+	}
+
+	/**
+	 * Obtem o primeiro registro da tabela
+	 * 
+	 * @return <%= p.getNameModel() %>
+	 */
+	public function findFirst() {
+		$aux = $this->fetchAllPg(1);
+		if($aux == null)
+			return null;
+		return $aux[0];
+	}
+
+	/**
+	 * Traz todos os registros
+	 * 
+	 * @return array
+	 */
+	public function fetchAll() {<% if(!p.hasTabelaExtends()){ %>
+		return $this->getMapper()->fetchAll();
+		<% } else { %>
+		$entries = $this->getMapper()->fetchAll();
+		foreach ($entries as $entry){
+			$entry->find($entry->getId());
+		}
+		return $entries;<% } %>
+	}
+	
+	/**
+	 * Traz todos os registros, método utilizado para realizar paginação
+	 * 
+	 * @param $count Número máximo de registros
+	 * @param $offset Começa busca a partir do registro de número especificado 
+	 * @return array
+	 */
+	public function fetchAllPg($count=null, $offset=null) {<% if(!p.hasTabelaExtends()){ %>
+		return $this->getMapper()->fetchAllPg($count, $offset);
+		<% } else { %>
+		$entries = $this->getMapper()->fetchAllPg($count, $offset);
+		foreach ($entries as $entry){
+			$entry->find($entry->getId());
+		}
+		return $entries;<% } %>
+	}
+	
+	/**
+	 * Traz todos os registros que satisfazem os parametros.
+	 * 
+	 * @param $example Objeto com parâmetros especificados, utilizado para busca
+	 * @param $order Ordenação dos objetos, nome da coluna no banco
+	 * @param $count Número máximo de registros
+	 * @param $offset Começa busca a partir do registro de número especificado 
+	 * @return array
+	 */
+	public function fetchList($where=null, $order=null, $count=null, $offset=null) {<% if(!p.hasTabelaExtends()){ %>
+		return $this->getMapper()->fetchList($where, $order, $count, $offset);
+		<% } else { %>
+		$entries = $this->getMapper()->fetchList($where, $order, $count, $offset);
+		foreach ($entries as $entry){
+			$entry->find($entry->getId());
+		}
+		return $entries;<% } %>
+	}
+
+	/**
+	 * Traz todos os registros que satisfazem os parametros, leva em conta os atributos
+	 * especificados no parametro $example
+	 * 
+	 * @param $example Objeto com parâmetros especificados, utilizado para busca
+	 * @param $order Ordenação dos objetos, nome da coluna no banco
+	 * @param $count Número máximo de registros
+	 * @param $offset Começa busca a partir do registro de número especificado
+	 * @param $additionalWhere parâmetros especificados, utilizado para busca, adicionais aos 
+	 *                         especificados no objeto. Valores especificados neste parâmetro 
+	 *                         prevalecem. 
+	 * @return array
+	 */
+	public function fetchListByExample(<%= p.getNameModel() %> $example=null, $order=null, $count=null, $offset=null, $additionalWhere=null) {<% if(!p.hasTabelaExtends()){ %>
+		return $this->getMapper()->fetchListByExample($example, $order, $count, $offset, $additionalWhere);
+		<% } else { %>
+		$entries = $this->getMapper()->fetchListByExample($example, $order, $count, $offset, $additionalWhere);
+		foreach ($entries as $entry){
+			$entry->find($entry-><%= p.getTabelaExtends().getFirstPkColumn().getGetName() %>());
+		}
+		return $entries;<% } %>
+	}
+	
+	/**
+	 *  Retorna o primeiro registro que encontrar com os dados do objeto corrente.
+	 *  
+	 * @param $order Ordenação dos objetos, nome da coluna no banco
+	 * @param $offset Começa busca a partir do registro de número especificado 
+	 * @param $additionalWhere parâmetros especificados, utilizado para busca, adicionais aos 
+	 *                         especificados no objeto. Valores especificados neste parâmetro 
+	 *                         prevalecem. 
+	 * @return <%= p.getNameModel() %> ou null se não encontrar nada.
+	 */
+	public function findFirstByExample($order=null, $offset=null) {
+		$result = $this->fetchListByExample($this, $order, 1, $offset, $additionalWhere=null);
+		if(count($result) <= 0)
+			return null;
+		$result = $result[0];
+		return $result;
+	}
+	
+	/**
+	 * Conta o número de registros da tabela de acordo com a cláusula where.
+	 * 
+	 * @param $where condição de contagem
+	 * @return int resultado da contagem
+	 */
+	public function count($where=null){
+		return $this->getMapper()->count($where);
+	}
+	
+	/**
+	 * Conta o número de registros de acordo com os atributos do objeto.
+	 * @param $additionalWhere parâmetros especificados, utilizado para busca, adicionais aos 
+	 *                         especificados no objeto. Valores especificados neste parâmetro 
+	 *                         prevalecem. 
+	 * @return int resultado da contagem
+	 */
+	public function countByExample($additionalWhere=null){
+		return $this->getMapper()->countByExample($this, $additionalWhere);
+	}
+	
+	/**
+     * Returns an instance of a Zend_Db_Table_Select object.
+     *
+     * @param bool $withFromPart Whether or not to include the from part of the select based on the table
+     * @return Zend_Db_Table_Select
+     */
+	public function select($withFromPart=null){
+		return $this->getMapper()->select($withFromPart);
+	}
+	
+	/**
+	 * Retorna uma string que identifica o objeto
+	 * 
+	 * @return string
+	 */
+ 	public function __toString() {
+ 		$out = "$<%= p.getNameCamel() %>{";
+ 		<%if(p.hasTabelaExtends()){for (Coluna c: p.getTabelaExtends().getChavesPrimarias()) { %>
+		$out .= "<%= c.getNameCamel() %> => ";
+		$out .= $this-><%= c.getGetName() %>();
+ 		$out .= " | ";
+		<%}}else{ %><%for (Coluna c: p.getChavesPrimarias()) { %>
+		$out .= "<%= c.getNameCamel() %> => ";
+		$out .= $this-><%= c.getGetName() %>();
+ 		$out .= " | ";
+		<% } %><%for (Coluna c: p.getColunasFkPk()) { %>
+		$out .= "<%= c.getTabelaFk().getVarNameCamel() %> => ";
+		$out .=  $this-><%= c.getGetName() %>();
+ 		$out .= " | ";
+		<%}} %>
+ 		$out .= "}";
+		return $out;
+    }
+}

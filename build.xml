@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ====================================================================== 
+     05/05/2009 16:56:20                                                        
+
+     PhpProject    
+     
+                   
+     Ivan                                                                
+     ====================================================================== -->
+<project name="PhpProject" default="all">
+
+	<target name="all" depends="obter, enviar"></target>
+	
+	<target name="obter">
+		
+		<echo message="==== Obtendo Arquivos ===="/>
+		
+		<ftp action="get" server="200.203.227.15" userid="website" password="w3b51t3" remotedir="/home/virtual/apucarana/novo/html/application" depends="yes">
+			<fileset dir="C:/xampp/htdocs/sitepma/application"></fileset>
+		</ftp>
+		<ftp action="get" server="200.203.227.15" userid="website" password="w3b51t3" remotedir="/home/virtual/apucarana/novo/html/public/js" depends="yes">
+			<fileset dir="C:/xampp/htdocs/sitepma/public/js"></fileset>
+		</ftp>
+		<ftp action="get" server="200.203.227.15" userid="website" password="w3b51t3" remotedir="/home/virtual/apucarana/novo/html/public/css" depends="yes">
+			<fileset dir="C:/xampp/htdocs/sitepma/public/css"></fileset>
+		</ftp>
+		
+	</target>
+	
+	<!-- - - - - - - - - - - - - - - - - - 
+          target: name                      
+         - - - - - - - - - - - - - - - - - -->
+	<target name="enviar" depends="application, jscss">
+	</target>
+	
+	<target name="application">
+		<echo message="==== Enviando Arquivos ===="/>
+		<ftp action="send" server="200.203.227.15" userid="website" password="w3b51t3" remotedir="/home/virtual/apucarana/novo/html/application" depends="yes">
+			<fileset dir="C:/xampp/htdocs/sitepma/application"></fileset>
+		</ftp>
+	</target>
+
+	<target name="jscss">
+		<ftp action="send" server="200.203.227.15" userid="website" password="w3b51t3" remotedir="/home/virtual/apucarana/novo/html/public/js" depends="yes">
+			<fileset dir="C:/xampp/htdocs/sitepma/public/js"></fileset>
+		</ftp>
+		<ftp action="send" server="200.203.227.15" userid="website" password="w3b51t3" remotedir="/home/virtual/apucarana/novo/html/public/css" depends="yes">
+			<fileset dir="C:/xampp/htdocs/sitepma/public/css"></fileset>
+		</ftp>
+	</target>
+
+</project>

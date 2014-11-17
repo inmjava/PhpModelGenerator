@@ -1,0 +1,31 @@
+<%@ jet package="br.gov.pr.apucarana.generator.modelgenerator.templates" 
+		class="GatewayTemplate" 
+		skeleton="generator.skeleton"
+		imports="" %>
+<?php
+
+/**
+ * Gateway de dados da tabela <%= p.getNameCamel() %>
+ * 
+ * @uses       Zend_Db_Table_Abstract
+ * @subpackage Model
+ */
+class <%= p.getNameGateway() %> extends Zend_Db_Table_Abstract{
+
+    /**
+     * @var string do banco de dados
+     */
+	protected $_schema = "<%= p.getNameBanco() %>";
+    
+    /**
+     * @var string nome da tabela no banco de dados
+     */
+    protected $_name = "<%= p.getName() %>";
+    
+    <% if(p.isPossuidoraPk()) { %>
+    /**
+     * @var <%= p.getPkTypeOrArray() %> correspondente a PK da tabela
+     */
+    protected $_primary = <%= p.getPkNmOrArrayPkNm() %>;
+    <% } %>
+}

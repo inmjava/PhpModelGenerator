@@ -1,0 +1,6 @@
+import br.gov.pr.apucarana.generator.modelgenerator.bean.Parametros;
+
+public class CLASS {
+	public String generate(Parametros p) {
+	}
+}
